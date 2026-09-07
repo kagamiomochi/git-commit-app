@@ -104,7 +104,21 @@ ipcMain.handle('git-status', async () => {
   try {
     const status = await git.status();
     const branchSummary = await git.branch();
-    return { status, branch: branchSummary.current };
+    // simple-gitのStatusResultはisClean()等の関数を含むクラスインスタンスで、
+    // そのままだとElectronのIPC（構造化クローン）でシリアライズに失敗し、
+    // 呼び出し側で例外になって何も表示されなくなる。プレーンオブジェクトに詰め替える。
+    return {
+      branch: branchSummary.current,
+      status: {
+        staged: status.staged,
+        modified: status.modified,
+        not_added: status.not_added,
+        created: status.created,
+        deleted: status.deleted,
+        conflicted: status.conflicted,
+        renamed: status.renamed,
+      },
+    };
   } catch (err) {
     return { error: err.message };
   }

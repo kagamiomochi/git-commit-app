@@ -49,8 +49,17 @@ async function refreshAll() {
 }
 
 async function refreshStatus() {
-  const res = await window.gitAPI.getStatus();
+  let res;
+  try {
+    res = await window.gitAPI.getStatus();
+  } catch (err) {
+    setStatusLine(els.commitStatus, `ステータス取得に失敗しました: ${err.message}`, 'err');
+    return;
+  }
   if (!res || res.error) {
+    if (res && res.error) {
+      setStatusLine(els.commitStatus, `ステータス取得に失敗しました: ${res.error}`, 'err');
+    }
     return;
   }
   els.branchBadge.hidden = false;
