@@ -25,6 +25,10 @@ const els = {
   btnCloneCancel: document.getElementById('btnCloneCancel'),
   btnCloneConfirm: document.getElementById('btnCloneConfirm'),
   cloneStatus: document.getElementById('cloneStatus'),
+  diffModal: document.getElementById('diffModal'),
+  diffFileName: document.getElementById('diffFileName'),
+  diffBody: document.getElementById('diffBody'),
+  btnDiffClose: document.getElementById('btnDiffClose'),
 };
 
 function setStatusLine(el, text, kind) {
@@ -68,10 +72,10 @@ async function refreshStatus() {
   const s = res.status;
   currentFiles = [];
 
-  s.staged.forEach((f) => currentFiles.push({ path: f, staged: true, status: statusCharFor(s, f) }));
+  s.staged.forEach((f) => currentFiles.push({ path: f, staged: true, status: statusCharFor(s, f), untracked: false }));
   const unstagedPaths = new Set([...s.modified, ...s.not_added, ...s.deleted, ...s.created]);
   s.staged.forEach((f) => unstagedPaths.delete(f));
-  unstagedPaths.forEach((f) => currentFiles.push({ path: f, staged: false, status: statusCharFor(s, f) }));
+  unstagedPaths.forEach((f) => currentFiles.push({ path: f, staged: false, status: statusCharFor(s, f), untracked: s.not_added.includes(f) }));
 
   renderFileList();
 }
@@ -90,7 +94,7 @@ function renderFileList() {
     return;
   }
   currentFiles.forEach((f) => {
-    const row = document.createElement('label');
+    const row = document.createElement('div');
     row.className = 'file-item';
 
     const checkbox = document.createElement('input');
@@ -110,9 +114,10 @@ function renderFileList() {
     statusSpan.textContent = f.status;
 
     const pathSpan = document.createElement('span');
-    pathSpan.className = 'file-path';
+    pathSpan.className = 'file-path clickable';
     pathSpan.textContent = f.path;
-    pathSpan.title = f.path;
+    pathSpan.title = 'クリックしてdiffを表示';
+    pathSpan.addEventListener('click', () => openDiff(f));
 
     row.appendChild(checkbox);
     row.appendChild(statusSpan);
@@ -120,6 +125,64 @@ function renderFileList() {
     els.fileList.appendChild(row);
   });
 }
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function classifyDiffLine(line) {
+  if (line.startsWith('+++') || line.startsWith('---')) return 'meta';
+  if (line.startsWith('+')) return 'add';
+  if (line.startsWith('-')) return 'remove';
+  if (line.startsWith('@@')) return 'hunk';
+  if (line.startsWith('diff --git') || line.startsWith('index ')) return 'meta';
+  return 'context';
+}
+
+function renderDiffText(text, mode) {
+  if (!text) {
+    return '<p class="empty-hint">差分はありません</p>';
+  }
+  const lines = text.split('\n');
+  return lines
+    .map((line) => {
+      const cls = mode === 'raw' ? 'context' : classifyDiffLine(line);
+      return `<div class="diff-line ${cls}">${escapeHtml(line) || '&nbsp;'}</div>`;
+    })
+    .join('');
+}
+
+async function openDiff(file) {
+  const category = file.staged ? 'staged' : file.untracked ? 'untracked' : 'unstaged';
+  els.diffFileName.textContent = file.path;
+  els.diffBody.innerHTML = '<p class="empty-hint">読み込み中...</p>';
+  els.diffModal.hidden = false;
+  try {
+    const res = await window.gitAPI.getDiff(file.path, category);
+    if (res.error) {
+      els.diffBody.innerHTML = `<p class="empty-hint">取得に失敗しました: ${escapeHtml(res.error)}</p>`;
+      return;
+    }
+    els.diffBody.innerHTML = renderDiffText(res.diff, res.mode);
+  } catch (err) {
+    els.diffBody.innerHTML = `<p class="empty-hint">取得に失敗しました: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function closeDiffModal() {
+  els.diffModal.hidden = true;
+}
+
+els.btnDiffClose.addEventListener('click', closeDiffModal);
+els.diffModal.addEventListener('click', (e) => {
+  if (e.target === els.diffModal) closeDiffModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !els.diffModal.hidden) closeDiffModal();
+});
 
 async function refreshLog() {
   const log = await window.gitAPI.getLog();

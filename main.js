@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const simpleGit = require('simple-git');
 
 let mainWindow;
@@ -183,6 +184,23 @@ ipcMain.handle('git-log', async () => {
     return log.all;
   } catch (err) {
     return [];
+  }
+});
+
+// category: 'staged' | 'untracked' | 'unstaged'
+ipcMain.handle('git-diff', async (event, filePath, category) => {
+  try {
+    requireGit();
+    if (category === 'untracked') {
+      const fullPath = path.join(repoPath, filePath);
+      const content = fs.readFileSync(fullPath, 'utf8');
+      return { diff: content, mode: 'raw' };
+    }
+    const args = category === 'staged' ? ['--cached', '--', filePath] : ['--', filePath];
+    const diff = await git.diff(args);
+    return { diff, mode: 'diff' };
+  } catch (err) {
+    return { error: err.message };
   }
 });
 

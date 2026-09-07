@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('gitAPI', {
   push: () => ipcRenderer.invoke('git-push'),
   pull: () => ipcRenderer.invoke('git-pull'),
   getLog: () => ipcRenderer.invoke('git-log'),
+  getDiff: (filePath, category) => ipcRenderer.invoke('git-diff', filePath, category),
   translate: (text) => ipcRenderer.invoke('translate-text', text),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
 });
