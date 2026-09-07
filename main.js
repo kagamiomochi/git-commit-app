@@ -159,6 +159,9 @@ ipcMain.handle('git-status', async () => {
         deleted: status.deleted,
         conflicted: status.conflicted,
         renamed: status.renamed,
+        ahead: status.ahead,
+        behind: status.behind,
+        tracking: status.tracking,
       },
     };
   } catch (err) {

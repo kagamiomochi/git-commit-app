@@ -43,6 +43,14 @@ function setRepoActive(active) {
   els.btnRefresh.disabled = !active;
   els.btnStageAll.disabled = !active;
   els.btnCommit.disabled = !active;
+  if (!active) updateSyncButtons(0, 0);
+}
+
+function updateSyncButtons(ahead, behind) {
+  els.btnPush.classList.toggle('btn-highlight', ahead > 0);
+  els.btnPush.textContent = ahead > 0 ? `プッシュ (${ahead})` : 'プッシュ';
+  els.btnPull.classList.toggle('btn-highlight', behind > 0);
+  els.btnPull.textContent = behind > 0 ? `プル (${behind})` : 'プル';
 }
 
 async function refreshAll() {
@@ -68,6 +76,8 @@ async function refreshStatus() {
   }
   els.branchBadge.hidden = false;
   els.branchBadge.textContent = res.branch || '-';
+
+  updateSyncButtons(res.status.ahead || 0, res.status.behind || 0);
 
   const s = res.status;
   currentFiles = [];
@@ -306,6 +316,7 @@ els.btnPush.addEventListener('click', async () => {
   const res = await window.gitAPI.push();
   if (res.success) {
     setStatusLine(els.commitStatus, 'プッシュしました', 'ok');
+    await refreshStatus();
   } else {
     setStatusLine(els.commitStatus, `失敗: ${res.error}`, 'err');
   }

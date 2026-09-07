@@ -98,6 +98,18 @@ html, body {
   padding: 3px 8px;
 }
 
+.btn-highlight {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #10131c;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(224, 194, 100, 0.28);
+}
+.btn-highlight:hover:not(:disabled) {
+  filter: brightness(1.08);
+  border-color: var(--yellow);
+}
+
 .main-grid {
   flex: 1;
   display: grid;
