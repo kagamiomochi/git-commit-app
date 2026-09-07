@@ -1,0 +1,17 @@
+{
+  "name": "git-commit-app",
+  "version": "1.0.0",
+  "description": "シンプルなGit GUIクライアント - プレフィックス付きコミット & 日本語→英語自動翻訳",
+  "main": "main.js",
+  "author": "kagamiomochi",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "simple-git": "^3.25.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

@@ -1,0 +1,288 @@
+let selectedPrefix = null;
+let currentFiles = []; // { path, status, staged }
+
+const els = {
+  repoPath: document.getElementById('repoPath'),
+  branchBadge: document.getElementById('branchBadge'),
+  btnOpen: document.getElementById('btnOpen'),
+  btnClone: document.getElementById('btnClone'),
+  btnPull: document.getElementById('btnPull'),
+  btnPush: document.getElementById('btnPush'),
+  btnRefresh: document.getElementById('btnRefresh'),
+  fileList: document.getElementById('fileList'),
+  btnStageAll: document.getElementById('btnStageAll'),
+  prefixRow: document.getElementById('prefixRow'),
+  commitMessage: document.getElementById('commitMessage'),
+  previewText: document.getElementById('previewText'),
+  autoTranslate: document.getElementById('autoTranslate'),
+  btnCommit: document.getElementById('btnCommit'),
+  commitStatus: document.getElementById('commitStatus'),
+  commitLog: document.getElementById('commitLog'),
+  cloneModal: document.getElementById('cloneModal'),
+  cloneUrl: document.getElementById('cloneUrl'),
+  cloneDest: document.getElementById('cloneDest'),
+  btnChooseDest: document.getElementById('btnChooseDest'),
+  btnCloneCancel: document.getElementById('btnCloneCancel'),
+  btnCloneConfirm: document.getElementById('btnCloneConfirm'),
+  cloneStatus: document.getElementById('cloneStatus'),
+};
+
+function setStatusLine(el, text, kind) {
+  el.textContent = text || '';
+  el.classList.remove('ok', 'err');
+  if (kind) el.classList.add(kind);
+}
+
+function setRepoActive(active) {
+  els.btnPull.disabled = !active;
+  els.btnPush.disabled = !active;
+  els.btnRefresh.disabled = !active;
+  els.btnStageAll.disabled = !active;
+  els.btnCommit.disabled = !active;
+}
+
+async function refreshAll() {
+  const path = await window.gitAPI.getRepoPath();
+  if (!path) return;
+  await refreshStatus();
+  await refreshLog();
+}
+
+async function refreshStatus() {
+  const res = await window.gitAPI.getStatus();
+  if (!res || res.error) {
+    return;
+  }
+  els.branchBadge.hidden = false;
+  els.branchBadge.textContent = res.branch || '-';
+
+  const s = res.status;
+  currentFiles = [];
+
+  s.staged.forEach((f) => currentFiles.push({ path: f, staged: true, status: statusCharFor(s, f) }));
+  const unstagedPaths = new Set([...s.modified, ...s.not_added, ...s.deleted, ...s.created]);
+  s.staged.forEach((f) => unstagedPaths.delete(f));
+  unstagedPaths.forEach((f) => currentFiles.push({ path: f, staged: false, status: statusCharFor(s, f) }));
+
+  renderFileList();
+}
+
+function statusCharFor(s, file) {
+  if (s.created.includes(file) || s.not_added.includes(file)) return 'A';
+  if (s.deleted.includes(file)) return 'D';
+  if (s.modified.includes(file)) return 'M';
+  return 'U';
+}
+
+function renderFileList() {
+  els.fileList.innerHTML = '';
+  if (currentFiles.length === 0) {
+    els.fileList.innerHTML = '<p class="empty-hint">変更されたファイルはありません</p>';
+    return;
+  }
+  currentFiles.forEach((f) => {
+    const row = document.createElement('label');
+    row.className = 'file-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = f.staged;
+    checkbox.addEventListener('change', async () => {
+      if (checkbox.checked) {
+        await window.gitAPI.stageFiles([f.path]);
+      } else {
+        await window.gitAPI.unstageFiles([f.path]);
+      }
+      await refreshStatus();
+    });
+
+    const statusSpan = document.createElement('span');
+    statusSpan.className = `file-status status-${f.status}`;
+    statusSpan.textContent = f.status;
+
+    const pathSpan = document.createElement('span');
+    pathSpan.className = 'file-path';
+    pathSpan.textContent = f.path;
+    pathSpan.title = f.path;
+
+    row.appendChild(checkbox);
+    row.appendChild(statusSpan);
+    row.appendChild(pathSpan);
+    els.fileList.appendChild(row);
+  });
+}
+
+async function refreshLog() {
+  const log = await window.gitAPI.getLog();
+  els.commitLog.innerHTML = '';
+  if (!log || log.length === 0) {
+    els.commitLog.innerHTML = '<p class="empty-hint">まだ表示するコミットがありません</p>';
+    return;
+  }
+  log.forEach((entry) => {
+    const div = document.createElement('div');
+    div.className = 'commit-entry';
+    const msg = document.createElement('div');
+    msg.className = 'msg';
+    msg.textContent = entry.message;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const date = new Date(entry.date);
+    meta.textContent = `${entry.hash.slice(0, 7)} · ${entry.author_name} · ${date.toLocaleString('ja-JP')}`;
+    div.appendChild(msg);
+    div.appendChild(meta);
+    els.commitLog.appendChild(div);
+  });
+}
+
+function updatePreview() {
+  const raw = els.commitMessage.value.trim();
+  const prefixPart = selectedPrefix ? `${selectedPrefix}: ` : '';
+  els.previewText.textContent = raw ? `${prefixPart}${raw}` : '-';
+}
+
+// --- イベント登録 ---
+
+els.btnOpen.addEventListener('click', async () => {
+  const res = await window.gitAPI.openDirectory();
+  if (!res) return;
+  if (res.error) {
+    alert(res.error);
+    return;
+  }
+  els.repoPath.textContent = res.path;
+  setRepoActive(true);
+  await refreshAll();
+});
+
+els.btnClone.addEventListener('click', () => {
+  els.cloneModal.hidden = false;
+  els.cloneUrl.value = '';
+  els.cloneDest.value = '';
+  setStatusLine(els.cloneStatus, '');
+});
+
+els.btnCloneCancel.addEventListener('click', () => {
+  els.cloneModal.hidden = true;
+});
+
+els.btnChooseDest.addEventListener('click', async () => {
+  const dir = await window.gitAPI.chooseCloneParent();
+  if (dir) els.cloneDest.value = dir;
+});
+
+els.btnCloneConfirm.addEventListener('click', async () => {
+  const url = els.cloneUrl.value.trim();
+  const dest = els.cloneDest.value.trim();
+  if (!url || !dest) {
+    setStatusLine(els.cloneStatus, 'URLと保存先の両方を指定してください', 'err');
+    return;
+  }
+  setStatusLine(els.cloneStatus, 'クローン中...');
+  els.btnCloneConfirm.disabled = true;
+  const res = await window.gitAPI.cloneRepo(url, dest);
+  els.btnCloneConfirm.disabled = false;
+  if (res.success) {
+    setStatusLine(els.cloneStatus, '完了しました', 'ok');
+    els.repoPath.textContent = res.path;
+    setRepoActive(true);
+    els.cloneModal.hidden = true;
+    await refreshAll();
+  } else {
+    setStatusLine(els.cloneStatus, `失敗: ${res.error}`, 'err');
+  }
+});
+
+els.btnRefresh.addEventListener('click', refreshAll);
+
+els.btnStageAll.addEventListener('click', async () => {
+  await window.gitAPI.stageFiles('all');
+  await refreshStatus();
+});
+
+els.btnPull.addEventListener('click', async () => {
+  setStatusLine(els.commitStatus, 'プル中...');
+  const res = await window.gitAPI.pull();
+  if (res.success) {
+    setStatusLine(els.commitStatus, 'プルしました', 'ok');
+    await refreshAll();
+  } else {
+    setStatusLine(els.commitStatus, `失敗: ${res.error}`, 'err');
+  }
+});
+
+els.btnPush.addEventListener('click', async () => {
+  setStatusLine(els.commitStatus, 'プッシュ中...');
+  const res = await window.gitAPI.push();
+  if (res.success) {
+    setStatusLine(els.commitStatus, 'プッシュしました', 'ok');
+  } else {
+    setStatusLine(els.commitStatus, `失敗: ${res.error}`, 'err');
+  }
+});
+
+els.prefixRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('.prefix-btn');
+  if (!btn) return;
+  const prefix = btn.dataset.prefix;
+  if (selectedPrefix === prefix) {
+    selectedPrefix = null;
+    btn.classList.remove('active');
+  } else {
+    selectedPrefix = prefix;
+    [...els.prefixRow.children].forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  updatePreview();
+});
+
+els.commitMessage.addEventListener('input', updatePreview);
+
+els.btnCommit.addEventListener('click', async () => {
+  const raw = els.commitMessage.value.trim();
+  if (!raw) {
+    setStatusLine(els.commitStatus, 'コミットメッセージを入力してください', 'err');
+    return;
+  }
+  els.btnCommit.disabled = true;
+  setStatusLine(els.commitStatus, '処理中...');
+
+  let finalMessage = raw;
+  if (els.autoTranslate.checked) {
+    const t = await window.gitAPI.translate(raw);
+    finalMessage = t.translated;
+  }
+  if (selectedPrefix) {
+    finalMessage = `${selectedPrefix}: ${finalMessage}`;
+  }
+
+  // ステージ済みファイルがなければ全て自動ステージ
+  const hasStaged = currentFiles.some((f) => f.staged);
+  if (!hasStaged && currentFiles.length > 0) {
+    await window.gitAPI.stageFiles('all');
+  }
+
+  const res = await window.gitAPI.commit(finalMessage);
+  els.btnCommit.disabled = false;
+
+  if (res.success) {
+    setStatusLine(els.commitStatus, `コミットしました: ${finalMessage}`, 'ok');
+    els.commitMessage.value = '';
+    selectedPrefix = null;
+    [...els.prefixRow.children].forEach((b) => b.classList.remove('active'));
+    updatePreview();
+    await refreshAll();
+  } else {
+    setStatusLine(els.commitStatus, `失敗: ${res.error}`, 'err');
+  }
+});
+
+// 初期化: 前回選択していたリポジトリがあれば復元表示
+(async () => {
+  const path = await window.gitAPI.getRepoPath();
+  if (path) {
+    els.repoPath.textContent = path;
+    setRepoActive(true);
+    await refreshAll();
+  }
+})();

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://translate.googleapis.com;" />
+<title>Git Commit App</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- トップバー -->
+  <header class="topbar">
+    <div class="repo-info">
+      <span class="repo-icon">◆</span>
+      <span id="repoPath" class="repo-path">リポジトリが未選択です</span>
+      <span id="branchBadge" class="branch-badge" hidden></span>
+    </div>
+    <div class="topbar-actions">
+      <button id="btnOpen" class="btn btn-ghost">フォルダを開く</button>
+      <button id="btnClone" class="btn btn-ghost">クローン</button>
+      <button id="btnPull" class="btn btn-ghost" disabled>プル</button>
+      <button id="btnPush" class="btn btn-ghost" disabled>プッシュ</button>
+      <button id="btnRefresh" class="btn btn-ghost" disabled title="更新">⟳</button>
+    </div>
+  </header>
+
+  <!-- クローンモーダル -->
+  <div id="cloneModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2>リポジトリをクローン</h2>
+      <label class="field-label">リモートURL</label>
+      <input id="cloneUrl" class="text-input" type="text" placeholder="https://github.com/user/repo.git" />
+      <label class="field-label">クローン先の親ディレクトリ</label>
+      <div class="row-inline">
+        <input id="cloneDest" class="text-input" type="text" placeholder="未選択" readonly />
+        <button id="btnChooseDest" class="btn btn-ghost">選択</button>
+      </div>
+      <div class="modal-actions">
+        <button id="btnCloneCancel" class="btn btn-ghost">キャンセル</button>
+        <button id="btnCloneConfirm" class="btn btn-primary">クローン実行</button>
+      </div>
+      <div id="cloneStatus" class="status-line"></div>
+    </div>
+  </div>
+
+  <main class="main-grid">
+
+    <!-- 左: ファイル一覧 -->
+    <section class="panel files-panel">
+      <div class="panel-header">
+        <h3>変更ファイル</h3>
+        <button id="btnStageAll" class="btn btn-mini" disabled>全てステージ</button>
+      </div>
+      <div id="fileList" class="file-list">
+        <p class="empty-hint">リポジトリを選択すると変更内容が表示されます</p>
+      </div>
+    </section>
+
+    <!-- 右: コミットエリア -->
+    <section class="panel commit-panel">
+      <div class="panel-header">
+        <h3>コミット</h3>
+      </div>
+
+      <div class="prefix-row" id="prefixRow">
+        <button class="prefix-btn" data-prefix="feat">feat</button>
+        <button class="prefix-btn" data-prefix="fix">fix</button>
+        <button class="prefix-btn" data-prefix="refactor">refactor</button>
+        <button class="prefix-btn" data-prefix="docs">docs</button>
+        <button class="prefix-btn" data-prefix="style">style</button>
+        <button class="prefix-btn" data-prefix="test">test</button>
+        <button class="prefix-btn" data-prefix="chore">chore</button>
+        <button class="prefix-btn" data-prefix="perf">perf</button>
+      </div>
+
+      <textarea id="commitMessage" class="commit-textarea" placeholder="コミットメッセージを日本語で入力（自動で英訳されます）" rows="4"></textarea>
+
+      <div class="preview-row">
+        <span class="preview-label">送信内容プレビュー:</span>
+        <span id="previewText" class="preview-text">-</span>
+      </div>
+
+      <div class="commit-actions">
+        <label class="checkbox-label">
+          <input type="checkbox" id="autoTranslate" checked />
+          日本語を自動で英訳する
+        </label>
+        <button id="btnCommit" class="btn btn-primary" disabled>コミット</button>
+      </div>
+
+      <div id="commitStatus" class="status-line"></div>
+
+      <div class="panel-header log-header">
+        <h3>最近のコミット</h3>
+      </div>
+      <div id="commitLog" class="commit-log">
+        <p class="empty-hint">まだ表示するコミットがありません</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

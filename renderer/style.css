@@ -1,0 +1,329 @@
+:root {
+  --bg: #1a1b1e;
+  --bg-panel: #212226;
+  --bg-elevated: #2a2b30;
+  --border: #34363b;
+  --text: #e7e8ea;
+  --text-dim: #8b8d93;
+  --accent: #7aa2f7;
+  --accent-hover: #93b4fa;
+  --green: #7ec98f;
+  --red: #e17b8c;
+  --yellow: #e0c264;
+  font-family: -apple-system, "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+}
+
+.topbar button { -webkit-app-region: no-drag; }
+
+.repo-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.repo-icon { color: var(--accent); }
+
+.repo-path {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+  color: var(--text-dim);
+}
+
+.branch-badge {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.topbar-actions { display: flex; gap: 6px; }
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost { background: transparent; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #10131c;
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.btn-mini {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.main-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 14px;
+}
+
+.files-panel {
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.commit-panel {
+  background: var(--bg);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.log-header { margin-top: 18px; }
+
+.file-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  font-size: 13px;
+}
+
+.file-item:hover { background: var(--bg-elevated); }
+
+.file-status {
+  width: 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.status-M { color: var(--yellow); }
+.status-A { color: var(--green); }
+.status-D { color: var(--red); }
+.status-U { color: var(--text-dim); }
+
+.file-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.empty-hint {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.prefix-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.prefix-btn {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+  padding: 5px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: monospace;
+}
+
+.prefix-btn:hover { border-color: var(--accent); color: var(--text); }
+
+.prefix-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #10131c;
+  font-weight: 700;
+}
+
+.commit-textarea {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 10px;
+  font-size: 14px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.commit-textarea:focus { outline: none; border-color: var(--accent); }
+
+.preview-row {
+  margin-top: 8px;
+  font-size: 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preview-label { color: var(--text-dim); }
+.preview-text { color: var(--accent); font-family: monospace; }
+
+.commit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.status-line {
+  margin-top: 8px;
+  font-size: 12px;
+  min-height: 16px;
+}
+
+.status-line.ok { color: var(--green); }
+.status-line.err { color: var(--red); }
+
+.commit-log {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.commit-entry {
+  border-left: 2px solid var(--border);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.commit-entry .msg { color: var(--text); }
+.commit-entry .meta { color: var(--text-dim); font-size: 11px; }
+
+/* モーダル */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  width: 420px;
+}
+
+.modal h2 {
+  margin: 0 0 14px 0;
+  font-size: 16px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 10px 0 4px;
+}
+
+.text-input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: 13px;
+}
+
+.text-input:focus { outline: none; border-color: var(--accent); }
+
+.row-inline { display: flex; gap: 6px; }
+.row-inline .text-input { flex: 1; }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
