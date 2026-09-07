@@ -70,12 +70,30 @@ ipcMain.handle('choose-clone-parent', async () => {
   return result.filePaths[0];
 });
 
+function withTimeout(promise, ms, timeoutMessage) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(timeoutMessage)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 ipcMain.handle('clone-repo', async (event, url, destParent) => {
   try {
     const name = url.split('/').pop().replace(/\.git$/, '') || 'repository';
     const dest = path.join(destParent, name);
-    const tempGit = simpleGit();
-    await tempGit.clone(url, dest);
+    // GIT_TERMINAL_PROMPT=0 で認証プロンプトを無効化し、
+    // 認証が必要なリポジトリの場合は待機せず即エラーにする
+    const tempGit = simpleGit().env({
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
+      GIT_ASKPASS: '',
+    });
+    await withTimeout(
+      tempGit.clone(url, dest),
+      30000,
+      'タイムアウトしました。認証が必要なリポジトリの可能性があります（SSH URLを使うか、事前にgit credentialを設定してください）'
+    );
     setRepo(dest);
     return { success: true, path: dest };
   } catch (err) {
