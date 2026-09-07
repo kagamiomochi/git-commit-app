@@ -1,0 +1,43 @@
+name: Build AppImage
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build AppImage
+        run: npx electron-builder --linux AppImage --publish never
+
+      - name: Get short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Update rolling "latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest build (${{ steps.vars.outputs.sha_short }})"
+          body: "自動ビルドによる最新のAppImageです。mainブランチへのpush (${{ github.sha }}) から生成されました。"
+          prerelease: false
+          make_latest: true
+          files: dist/*.AppImage
