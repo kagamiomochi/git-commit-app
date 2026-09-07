@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const simpleGit = require('simple-git');
@@ -6,6 +6,42 @@ const simpleGit = require('simple-git');
 let mainWindow;
 let git = null;
 let repoPath = null;
+
+const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
+
+function loadConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  } catch (err) {
+    return {};
+  }
+}
+
+function saveConfig(partial) {
+  try {
+    const merged = { ...loadConfig(), ...partial };
+    fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2));
+  } catch (err) {
+    console.error('設定の保存に失敗しました:', err.message);
+  }
+}
+
+async function restoreLastRepo() {
+  const config = loadConfig();
+  const lastPath = config.lastRepoPath;
+  if (!lastPath || !fs.existsSync(lastPath)) return;
+  try {
+    const check = simpleGit(lastPath);
+    const isRepo = await check.checkIsRepo();
+    if (isRepo) {
+      repoPath = lastPath;
+      git = simpleGit(lastPath);
+    }
+  } catch (err) {
+    // 復元できなければ何もしない（未選択のまま起動）
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -24,7 +60,11 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  Menu.setApplicationMenu(null);
+  await restoreLastRepo();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
@@ -37,6 +77,7 @@ app.on('activate', () => {
 function setRepo(p) {
   repoPath = p;
   git = simpleGit(p);
+  saveConfig({ lastRepoPath: p });
 }
 
 function requireGit() {
