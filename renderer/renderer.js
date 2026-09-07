@@ -162,8 +162,21 @@ els.btnClone.addEventListener('click', () => {
   setStatusLine(els.cloneStatus, '');
 });
 
-els.btnCloneCancel.addEventListener('click', () => {
+function closeCloneModal() {
   els.cloneModal.hidden = true;
+  els.btnCloneConfirm.disabled = false;
+}
+
+els.btnCloneCancel.addEventListener('click', closeCloneModal);
+
+// 背景（オーバーレイ部分）をクリックしても閉じる
+els.cloneModal.addEventListener('click', (e) => {
+  if (e.target === els.cloneModal) closeCloneModal();
+});
+
+// Escapeキーでも閉じる
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !els.cloneModal.hidden) closeCloneModal();
 });
 
 els.btnChooseDest.addEventListener('click', async () => {
@@ -180,16 +193,21 @@ els.btnCloneConfirm.addEventListener('click', async () => {
   }
   setStatusLine(els.cloneStatus, 'クローン中...');
   els.btnCloneConfirm.disabled = true;
-  const res = await window.gitAPI.cloneRepo(url, dest);
-  els.btnCloneConfirm.disabled = false;
-  if (res.success) {
-    setStatusLine(els.cloneStatus, '完了しました', 'ok');
-    els.repoPath.textContent = res.path;
-    setRepoActive(true);
-    els.cloneModal.hidden = true;
-    await refreshAll();
-  } else {
-    setStatusLine(els.cloneStatus, `失敗: ${res.error}`, 'err');
+  try {
+    const res = await window.gitAPI.cloneRepo(url, dest);
+    if (res.success) {
+      setStatusLine(els.cloneStatus, '完了しました', 'ok');
+      els.repoPath.textContent = res.path;
+      setRepoActive(true);
+      els.cloneModal.hidden = true;
+      await refreshAll();
+    } else {
+      setStatusLine(els.cloneStatus, `失敗: ${res.error}`, 'err');
+    }
+  } catch (err) {
+    setStatusLine(els.cloneStatus, `失敗: ${err.message}`, 'err');
+  } finally {
+    els.btnCloneConfirm.disabled = false;
   }
 });
 

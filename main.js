@@ -83,12 +83,10 @@ ipcMain.handle('clone-repo', async (event, url, destParent) => {
     const name = url.split('/').pop().replace(/\.git$/, '') || 'repository';
     const dest = path.join(destParent, name);
     // GIT_TERMINAL_PROMPT=0 で認証プロンプトを無効化し、
-    // 認証が必要なリポジトリの場合は待機せず即エラーにする
-    const tempGit = simpleGit().env({
-      ...process.env,
-      GIT_TERMINAL_PROMPT: '0',
-      GIT_ASKPASS: '',
-    });
+    // 認証が必要なリポジトリの場合は待機せず即エラーにする。
+    // process.env全体は渡さず、必要な変数だけ追加する
+    // （$EDITOR等を渡すとsimple-gitの安全チェックに引っかかるため）
+    const tempGit = simpleGit().env('GIT_TERMINAL_PROMPT', '0');
     await withTimeout(
       tempGit.clone(url, dest),
       30000,
