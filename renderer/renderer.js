@@ -217,10 +217,36 @@ async function refreshLog() {
   });
 }
 
+let previewTimer = null;
+let previewToken = 0;
+
 function updatePreview() {
   const raw = els.commitMessage.value.trim();
   const prefixPart = selectedPrefix ? `${selectedPrefix}: ` : '';
-  els.previewText.textContent = raw ? `${prefixPart}${raw}` : '-';
+
+  clearTimeout(previewTimer);
+  previewToken += 1;
+
+  if (!raw) {
+    els.previewText.textContent = '-';
+    return;
+  }
+
+  const hasJapanese = /[\u3040-\u30ff\u30a0-\u30ff\u3400-\u9fff]/.test(raw);
+
+  if (!els.autoTranslate.checked || !hasJapanese) {
+    els.previewText.textContent = `${prefixPart}${raw}`;
+    return;
+  }
+
+  els.previewText.textContent = `${prefixPart}(翻訳中...)`;
+
+  const myToken = previewToken;
+  previewTimer = setTimeout(async () => {
+    const t = await window.gitAPI.translate(raw);
+    if (myToken !== previewToken) return; // 入力が変わっていたら古い結果は捨てる
+    els.previewText.textContent = `${prefixPart}${t.translated}`;
+  }, 500);
 }
 
 // --- イベント登録 ---
@@ -338,6 +364,7 @@ els.prefixRow.addEventListener('click', (e) => {
 });
 
 els.commitMessage.addEventListener('input', updatePreview);
+els.autoTranslate.addEventListener('change', updatePreview);
 
 els.btnCommit.addEventListener('click', async () => {
   const raw = els.commitMessage.value.trim();
