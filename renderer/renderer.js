@@ -1,4 +1,6 @@
 let selectedPrefix = null;
+let prefixChosen = false;
+let repoActive = false;
 let currentFiles = []; // { path, status, staged }
 
 const els = {
@@ -38,12 +40,17 @@ function setStatusLine(el, text, kind) {
 }
 
 function setRepoActive(active) {
+  repoActive = active;
   els.btnPull.disabled = !active;
   els.btnPush.disabled = !active;
   els.btnRefresh.disabled = !active;
   els.btnStageAll.disabled = !active;
-  els.btnCommit.disabled = !active;
+  updateCommitButtonState();
   if (!active) updateSyncButtons(0, 0);
+}
+
+function updateCommitButtonState() {
+  els.btnCommit.disabled = !repoActive || !prefixChosen;
 }
 
 function updateSyncButtons(ahead, behind) {
@@ -352,14 +359,12 @@ els.prefixRow.addEventListener('click', (e) => {
   const btn = e.target.closest('.prefix-btn');
   if (!btn) return;
   const prefix = btn.dataset.prefix;
-  if (selectedPrefix === prefix) {
-    selectedPrefix = null;
-    btn.classList.remove('active');
-  } else {
-    selectedPrefix = prefix;
-    [...els.prefixRow.children].forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
+  // none も含めて必ずどれか1つを選ぶ方式（選択解除はできない）
+  selectedPrefix = prefix === 'none' ? null : prefix;
+  prefixChosen = true;
+  [...els.prefixRow.children].forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateCommitButtonState();
   updatePreview();
 });
 
@@ -391,16 +396,18 @@ els.btnCommit.addEventListener('click', async () => {
   }
 
   const res = await window.gitAPI.commit(finalMessage);
-  els.btnCommit.disabled = false;
 
   if (res.success) {
     setStatusLine(els.commitStatus, `コミットしました: ${finalMessage}`, 'ok');
     els.commitMessage.value = '';
     selectedPrefix = null;
+    prefixChosen = false;
     [...els.prefixRow.children].forEach((b) => b.classList.remove('active'));
+    updateCommitButtonState();
     updatePreview();
     await refreshAll();
   } else {
+    updateCommitButtonState();
     setStatusLine(els.commitStatus, `失敗: ${res.error}`, 'err');
   }
 });

@@ -221,6 +221,17 @@ html, body {
   font-weight: 700;
 }
 
+.prefix-btn-none {
+  border-style: dashed;
+  font-style: italic;
+}
+.prefix-btn-none.active {
+  background: var(--text-dim);
+  border-color: var(--text-dim);
+  color: #10131c;
+  font-style: normal;
+}
+
 .commit-textarea {
   width: 100%;
   background: var(--bg-elevated);
