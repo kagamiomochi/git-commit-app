@@ -6,12 +6,23 @@
   "author": "kagamiomochi",
   "license": "MIT",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --linux AppImage"
   },
   "dependencies": {
     "simple-git": "^3.25.0"
   },
   "devDependencies": {
-    "electron": "^31.0.0"
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.kagamiomochi.gitcommitapp",
+    "productName": "GitCommitApp",
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Development"
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
   }
 }
