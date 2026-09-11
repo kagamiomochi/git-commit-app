@@ -13,6 +13,7 @@ const els = {
   btnPull: document.getElementById('btnPull'),
   btnPush: document.getElementById('btnPush'),
   btnRefresh: document.getElementById('btnRefresh'),
+  btnOpenInExplorer: document.getElementById('btnOpenInExplorer'),
   fileList: document.getElementById('fileList'),
   btnStageAll: document.getElementById('btnStageAll'),
   prefixRow: document.getElementById('prefixRow'),
@@ -47,6 +48,7 @@ function setRepoActive(active) {
   els.btnPush.disabled = !active;
   els.btnRefresh.disabled = !active;
   els.btnStageAll.disabled = !active;
+  els.btnOpenInExplorer.disabled = !active;
   updateCommitButtonState();
   if (!active) updateSyncButtons(0, 0);
 }
@@ -340,6 +342,13 @@ els.btnCloneConfirm.addEventListener('click', async () => {
 });
 
 els.btnRefresh.addEventListener('click', refreshAll);
+
+els.btnOpenInExplorer.addEventListener('click', async () => {
+  const res = await window.gitAPI.openRepoFolder();
+  if (!res.success) {
+    setStatusLine(els.commitStatus, `フォルダを開けませんでした: ${res.error}`, 'err');
+  }
+});
 
 els.btnStageAll.addEventListener('click', async () => {
   await window.gitAPI.stageFiles('all');

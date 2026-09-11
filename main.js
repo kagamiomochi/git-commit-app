@@ -252,6 +252,14 @@ ipcMain.handle('open-external', (event, url) => {
   shell.openExternal(url);
 });
 
+ipcMain.handle('open-repo-folder', async () => {
+  if (!repoPath) return { success: false, error: 'リポジトリが選択されていません' };
+  const result = await shell.openPath(repoPath);
+  // shell.openPathは成功時は空文字、失敗時はエラーメッセージを返す
+  if (result) return { success: false, error: result };
+  return { success: true };
+});
+
 // 日本語→英語 自動翻訳（Google翻訳の無料エンドポイントを利用）
 ipcMain.handle('translate-text', async (event, text) => {
   const hasJapanese = /[\u3040-\u30ff\u30a0-\u30ff\u3400-\u9fff]/.test(text);

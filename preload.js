@@ -15,4 +15,5 @@ contextBridge.exposeInMainWorld('gitAPI', {
   getDiff: (filePath, category) => ipcRenderer.invoke('git-diff', filePath, category),
   translate: (text) => ipcRenderer.invoke('translate-text', text),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  openRepoFolder: () => ipcRenderer.invoke('open-repo-folder'),
 });
