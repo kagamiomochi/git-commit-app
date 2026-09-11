@@ -1,6 +1,8 @@
 let selectedPrefix = null;
 let prefixChosen = false;
 let repoActive = false;
+let translationPending = false;
+let translatedCache = { raw: '', translated: '' };
 let currentFiles = []; // { path, status, staged }
 
 const els = {
@@ -236,6 +238,8 @@ function updatePreview() {
 
   if (!raw) {
     els.previewText.textContent = '-';
+    translationPending = false;
+    updateCommitButtonState();
     return;
   }
 
@@ -243,15 +247,24 @@ function updatePreview() {
 
   if (!els.autoTranslate.checked || !hasJapanese) {
     els.previewText.textContent = `${prefixPart}${raw}`;
+    translatedCache = { raw, translated: raw };
+    translationPending = false;
+    updateCommitButtonState();
     return;
   }
 
+  // 翻訳が確定するまではコミットさせない
+  translationPending = true;
+  updateCommitButtonState();
   els.previewText.textContent = `${prefixPart}(翻訳中...)`;
 
   const myToken = previewToken;
   previewTimer = setTimeout(async () => {
     const t = await window.gitAPI.translate(raw);
     if (myToken !== previewToken) return; // 入力が変わっていたら古い結果は捨てる
+    translatedCache = { raw, translated: t.translated };
+    translationPending = false;
+    updateCommitButtonState();
     els.previewText.textContent = `${prefixPart}${t.translated}`;
   }, 500);
 }
@@ -380,10 +393,25 @@ els.btnCommit.addEventListener('click', async () => {
   els.btnCommit.disabled = true;
   setStatusLine(els.commitStatus, '処理中...');
 
+  // プレビューで確定済みの翻訳結果があればそれを使う。
+  // まだ翻訳中/未確定の場合はボタン操作は止めず、ここで即座に翻訳して
+  // 完了を待ってからコミットする（デバウンス待ちはスキップする）
   let finalMessage = raw;
   if (els.autoTranslate.checked) {
-    const t = await window.gitAPI.translate(raw);
-    finalMessage = t.translated;
+    const hasJapanese = /[\u3040-\u30ff\u30a0-\u30ff\u3400-\u9fff]/.test(raw);
+    if (hasJapanese) {
+      if (translatedCache.raw === raw) {
+        finalMessage = translatedCache.translated;
+      } else {
+        clearTimeout(previewTimer);
+        previewToken += 1;
+        setStatusLine(els.commitStatus, '翻訳中...');
+        const t = await window.gitAPI.translate(raw);
+        translatedCache = { raw, translated: t.translated };
+        translationPending = false;
+        finalMessage = t.translated;
+      }
+    }
   }
   if (selectedPrefix) {
     finalMessage = `${selectedPrefix}: ${finalMessage}`;
@@ -402,6 +430,7 @@ els.btnCommit.addEventListener('click', async () => {
     els.commitMessage.value = '';
     selectedPrefix = null;
     prefixChosen = false;
+    translatedCache = { raw: '', translated: '' };
     [...els.prefixRow.children].forEach((b) => b.classList.remove('active'));
     updateCommitButtonState();
     updatePreview();
