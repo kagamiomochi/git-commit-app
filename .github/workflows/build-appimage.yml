@@ -28,6 +28,9 @@ jobs:
       - name: Build AppImage
         run: npx electron-builder --linux AppImage --publish never
 
+      - name: Make AppImage executable
+        run: chmod +x dist/*.AppImage
+
       - name: Get short SHA
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
