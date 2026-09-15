@@ -16,11 +16,16 @@
       <span class="repo-icon">◆</span>
       <span id="repoPath" class="repo-path">リポジトリが未選択です</span>
       <span id="branchBadge" class="branch-badge" hidden></span>
-      <button id="btnOpenInExplorer" class="btn btn-mini btn-ghost" disabled title="ファイラーで開く">📂</button>
     </div>
     <div class="topbar-actions">
-      <button id="btnOpen" class="btn btn-ghost">フォルダを開く</button>
-      <button id="btnClone" class="btn btn-ghost">クローン</button>
+      <button id="btnOpenInExplorer" class="btn btn-ghost" disabled title="ファイラーで開く">📂</button>
+      <div class="dropdown">
+        <button id="btnRepoMenu" class="btn btn-ghost">リポジトリを選択 ▾</button>
+        <div id="repoMenu" class="dropdown-menu" hidden>
+          <button id="menuOpenFolder" class="dropdown-item">フォルダを選択</button>
+          <button id="menuClone" class="dropdown-item">クローン</button>
+        </div>
+      </div>
       <button id="btnPull" class="btn btn-ghost" disabled>プル</button>
       <button id="btnPush" class="btn btn-ghost" disabled>プッシュ</button>
       <button id="btnRefresh" class="btn btn-ghost" disabled title="更新">⟳</button>
