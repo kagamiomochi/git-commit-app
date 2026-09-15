@@ -8,8 +8,10 @@ let currentFiles = []; // { path, status, staged }
 const els = {
   repoPath: document.getElementById('repoPath'),
   branchBadge: document.getElementById('branchBadge'),
-  btnOpen: document.getElementById('btnOpen'),
-  btnClone: document.getElementById('btnClone'),
+  btnRepoMenu: document.getElementById('btnRepoMenu'),
+  repoMenu: document.getElementById('repoMenu'),
+  menuOpenFolder: document.getElementById('menuOpenFolder'),
+  menuClone: document.getElementById('menuClone'),
   btnPull: document.getElementById('btnPull'),
   btnPush: document.getElementById('btnPush'),
   btnRefresh: document.getElementById('btnRefresh'),
@@ -273,7 +275,27 @@ function updatePreview() {
 
 // --- イベント登録 ---
 
-els.btnOpen.addEventListener('click', async () => {
+function closeRepoMenu() {
+  els.repoMenu.hidden = true;
+}
+
+els.btnRepoMenu.addEventListener('click', (e) => {
+  e.stopPropagation();
+  els.repoMenu.hidden = !els.repoMenu.hidden;
+});
+
+document.addEventListener('click', (e) => {
+  if (!els.repoMenu.hidden && !e.target.closest('.dropdown')) {
+    closeRepoMenu();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !els.repoMenu.hidden) closeRepoMenu();
+});
+
+els.menuOpenFolder.addEventListener('click', async () => {
+  closeRepoMenu();
   const res = await window.gitAPI.openDirectory();
   if (!res) return;
   if (res.error) {
@@ -285,7 +307,8 @@ els.btnOpen.addEventListener('click', async () => {
   await refreshAll();
 });
 
-els.btnClone.addEventListener('click', () => {
+els.menuClone.addEventListener('click', () => {
+  closeRepoMenu();
   els.cloneModal.hidden = false;
   els.cloneUrl.value = '';
   els.cloneDest.value = '';
