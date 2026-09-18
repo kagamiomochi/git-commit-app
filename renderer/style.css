@@ -316,6 +316,7 @@ html, body {
   margin-top: 8px;
   font-size: 12px;
   min-height: 16px;
+  white-space: pre-wrap;
 }
 
 .status-line.ok { color: var(--green); }

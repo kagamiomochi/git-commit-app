@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process');
+const util = require('util');
+const execAsync = util.promisify(exec);
 const simpleGit = require('simple-git');
 
 let mainWindow;
@@ -245,6 +248,30 @@ ipcMain.handle('git-diff', async (event, filePath, category) => {
     return { diff, mode: 'diff' };
   } catch (err) {
     return { error: err.message };
+  }
+});
+
+// opencommit (oco) を使ってステージ内容からメッセージを自動生成し、
+// 確認プロンプト無し(--yes)でそのままコミットする。
+// oco単体は確認待ちでターミナル入力を要求するため非対話環境では固まる恐れがあり、
+// --yesのみサポートする。
+ipcMain.handle('opencommit-generate', async () => {
+  if (!repoPath) return { success: false, error: 'リポジトリが選択されていません' };
+  try {
+    const { stdout, stderr } = await withTimeout(
+      execAsync('oco --yes', { cwd: repoPath, maxBuffer: 1024 * 1024 }),
+      60000,
+      'タイムアウトしました（OpenCommitのAPI応答が遅い、またはocoが応答していません）'
+    );
+    return { success: true, output: (stdout || stderr || '').trim() };
+  } catch (err) {
+    if (err.code === 'ENOENT' || /command not found|not recognized/i.test(err.message)) {
+      return {
+        success: false,
+        error: 'ocoコマンドが見つかりません。"npm install -g opencommit" でインストールしてください',
+      };
+    }
+    return { success: false, error: (err.stderr || err.message || '').trim() };
   }
 });
 

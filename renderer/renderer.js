@@ -23,6 +23,7 @@ const els = {
   previewText: document.getElementById('previewText'),
   autoTranslate: document.getElementById('autoTranslate'),
   btnCommit: document.getElementById('btnCommit'),
+  btnOpencommit: document.getElementById('btnOpencommit'),
   commitStatus: document.getElementById('commitStatus'),
   commitLog: document.getElementById('commitLog'),
   cloneModal: document.getElementById('cloneModal'),
@@ -51,6 +52,7 @@ function setRepoActive(active) {
   els.btnRefresh.disabled = !active;
   els.btnStageAll.disabled = !active;
   els.btnOpenInExplorer.disabled = !active;
+  els.btnOpencommit.disabled = !active;
   updateCommitButtonState();
   if (!active) updateSyncButtons(0, 0);
 }
@@ -469,6 +471,27 @@ els.btnCommit.addEventListener('click', async () => {
     await refreshAll();
   } else {
     updateCommitButtonState();
+    setStatusLine(els.commitStatus, `失敗: ${res.error}`, 'err');
+  }
+});
+
+els.btnOpencommit.addEventListener('click', async () => {
+  const confirmed = confirm(
+    'OpenCommitが変更内容からコミットメッセージを自動生成し、確認無しでそのままコミットします（このアプリのprefixや翻訳機能は使われません）。よろしいですか？'
+  );
+  if (!confirmed) return;
+
+  els.btnOpencommit.disabled = true;
+  setStatusLine(els.commitStatus, 'OpenCommitで生成中...');
+
+  const res = await window.gitAPI.opencommitGenerate();
+
+  els.btnOpencommit.disabled = !repoActive;
+
+  if (res.success) {
+    setStatusLine(els.commitStatus, `OpenCommitでコミットしました\n${res.output}`, 'ok');
+    await refreshAll();
+  } else {
     setStatusLine(els.commitStatus, `失敗: ${res.error}`, 'err');
   }
 });
